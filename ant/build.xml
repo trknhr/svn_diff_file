@@ -1,0 +1,103 @@
+<?xml version="1.0"?>
+
+<project default="main" basedir=".">
+
+	<property file="build.properties"/>
+	
+	<!-- パスを通す -->
+  	 <path id="path.svnant">
+		<pathelement location="${basedir}/${lib.dir}/svnant.jar"/>
+		<pathelement location="${basedir}/${lib.dir}/svnClientAdapter.jar"/>
+		<pathelement location="${basedir}/${lib.dir}/svnjavahl.jar" />
+        <pathelement location="${basedir}/${lib.dir}/jna.jar" />
+		<pathelement location="${basedir}/${lib.dir}/svnkit.jar" />
+		<pathelement location="${basedir}/${lib.dir}/ganymed.jar" />
+	</path>
+	<echo message="${basedir}/${lib.dir}"/>
+	<typedef resource="org/tigris/subversion/svnant/svnantlib.xml"
+	   classpathref="path.svnant" />
+	<svnSetting id="svn.setting" javahl="false" svnkit="true"/>
+		
+	<!-- ディレクトリの削除→再生成 -->
+	<target name="clean">
+		<delete dir="${outdir}"/>
+		<delete file="summarize" />
+		<delete file="${diffListTxt}"/>
+		<mkdir dir="${outdir}"/>
+	</target>
+	
+	<!-- リビジョンの取得 -->
+	<target name="revision">
+	    <svn refid="svn.setting">
+	        <singleinfo property="svn.revision" 
+	            target="${repoUrl}" request="revision" />
+	        <diffSummarize oldUrl="${repoUrl}"
+	             oldTargetRevision="${before_revision}"
+	             newUrl="${repoUrl}"
+	             outFile="summarize"
+	             />
+	    </svn>
+	    <echo message="SVN revision: ${svn.revision}" />
+	</target>
+	
+	<!-- 差分テキストの出力-->
+	<target name="list.txt">
+	    <!-- 何故か2回繰り返さないと置換されない・・・ -->
+		<replaceregexp file="summarize"
+		               match="^ "
+		               replace=""
+		               byline="true"/>
+		<replaceregexp file="summarize"
+		               match="^ "
+		               replace=""
+		               byline="true"/>
+	    <loadfile property="diffFile" srcfile="summarize" />
+       	<script language="javascript">
+			<![CDATA[
+	    	    importPackage(Packages.org.apache.tools.ant.types);
+			    importClass(java.io.File);
+			    if(project.getProperty("diffFile")){
+				    var diffPathes = diffFile.split("\n");
+				    var str = "";
+				    c = project.createTask("echo");
+					c.setFile(new File(diffListTxt));
+					for(var i = 0; i < diffPathes.length; i++){
+						if(diffPathes[i].match(includeList)){
+						 	java.lang.System.out.println(diffPathes[i]); 
+						    str += diffPathes[i] + "\n";
+					    }
+				    }
+				    c.setMessage(str);
+				    c.execute();
+				}
+			]]>
+    	</script>
+	</target>
+	<target name="setSrc">
+	    <loadfile property="diffFile" srcfile="${diffListTxt}" />
+       	<script language="javascript">
+			<![CDATA[
+	    	    importPackage(Packages.org.apache.tools.ant.types);
+			    importClass(java.io.File);
+			    if(project.getProperty("diffFile")){
+				    var diffPathes = diffFile.split("\n");
+					for(var i = 0; i < diffPathes.length; i++){
+					if(diffPathes[i].match(includeList)){
+						java.lang.System.out.println(diffPathes[i]);
+						fs = new FileSet();
+						fs.setProject(project);
+						fs.setDir(new File(from_dir));
+						fs.setIncludes(diffPathes[i]);
+						    
+						c = project.createTask("copy");
+						c.setTodir(new File(outdir));
+						c.addFileset(fs);
+						c.execute();
+					}
+			      }
+		      }
+			]]>
+    	</script>
+	</target>
+	
+</project>
