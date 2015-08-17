@@ -2,6 +2,7 @@
 
 <project default="main" basedir=".">
 
+    <target name="main" depends="clean, revision, list.txt, setSrc"/>
 	<property file="build.properties"/>
 	
 	<!-- パスを通す -->
@@ -17,8 +18,13 @@
 	<typedef resource="org/tigris/subversion/svnant/svnantlib.xml"
 	   classpathref="path.svnant" />
 	<svnSetting id="svn.setting" javahl="false" svnkit="true"/>
+
+    <target name="echo">
+        <echo>改行も
+            空白も関係ある
+        </echo>
+    </target>
 		
-	<!-- ディレクトリの削除→再生成 -->
 	<target name="clean">
 		<delete dir="${outdir}"/>
 		<delete file="summarize" />
@@ -26,7 +32,7 @@
 		<mkdir dir="${outdir}"/>
 	</target>
 	
-	<!-- リビジョンの取得 -->
+	<!-- get svn commit revision -->
 	<target name="revision">
 	    <svn refid="svn.setting">
 	        <singleinfo property="svn.revision" 
@@ -40,9 +46,9 @@
 	    <echo message="SVN revision: ${svn.revision}" />
 	</target>
 	
-	<!-- 差分テキストの出力-->
+	<!-- out put svn diff summarize text -->
 	<target name="list.txt">
-	    <!-- 何故か2回繰り返さないと置換されない・・・ -->
+	    <!-- twice... todo: one time execution -->
 		<replaceregexp file="summarize"
 		               match="^ "
 		               replace=""
