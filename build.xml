@@ -2,62 +2,56 @@
 
 <project default="main" basedir=".">
 
-    <target name="main" depends="clean, revision, list.txt, setSrc"/>
+    <target name="main" depends="before_clean, svn_setting, edit_diff_file, list, set_src, after_clean"/>
 	<property file="build.properties"/>
-	
+    <property name="diffFileTxt" value="diffFile.txt" />
+    <property name="diffListTxt" value="processed_diff_list.txt" />
+    <property  name="from_dir" value="from_dir" />
+
 	<!-- パスを通す -->
   	 <path id="path.svnant">
-		<pathelement location="${basedir}/${lib.dir}/svnant.jar"/>
-		<pathelement location="${basedir}/${lib.dir}/svnClientAdapter.jar"/>
-		<pathelement location="${basedir}/${lib.dir}/svnjavahl.jar" />
-        <pathelement location="${basedir}/${lib.dir}/jna.jar" />
-		<pathelement location="${basedir}/${lib.dir}/svnkit.jar" />
-		<pathelement location="${basedir}/${lib.dir}/ganymed.jar" />
+		<pathelement location="${basedir}/${lib.dir}/*.jar"/>
 	</path>
 	<echo message="${basedir}/${lib.dir}"/>
 	<typedef resource="org/tigris/subversion/svnant/svnantlib.xml"
 	   classpathref="path.svnant" />
-	<svnSetting id="svn.setting" javahl="false" svnkit="true"/>
+	<svnSetting id="svn.setting" javahl="false" svnkit="false"/>
 
-    <target name="echo">
-        <echo>改行も
-            空白も関係ある
-        </echo>
-    </target>
-		
-	<target name="clean">
+	<target name="before_clean">
 		<delete dir="${outdir}"/>
-		<delete file="summarize" />
+		<delete file="${diffFileTxt}" />
 		<delete file="${diffListTxt}"/>
 		<mkdir dir="${outdir}"/>
 	</target>
 	
 	<!-- get svn commit revision -->
-	<target name="revision">
+	<target name="svn_setting">
 	    <svn refid="svn.setting">
-	        <singleinfo property="svn.revision" 
+	        <singleinfo property="svn.revision"
 	            target="${repoUrl}" request="revision" />
-	        <diffSummarize oldUrl="${repoUrl}"
+            <checkout depth="infinity" url="${repoUrl}" destpath="${from_dir}"/>
+	        <diff oldUrl="${repoUrl}"
 	             oldTargetRevision="${before_revision}"
 	             newUrl="${repoUrl}"
-	             outFile="summarize"
+	             outFile="${diffFileTxt}"
 	             />
 	    </svn>
-	    <echo message="SVN revision: ${svn.revision}" />
+        <echo message="SVN revision: ${svn.revision}" />
 	</target>
+    <target name="edit_diff_file">
+        <replaceregexp file="${diffFileTxt}"
+                       match="^(?!.*Index:).*"
+                       replace=""
+                       byline="true"/>
+        <replaceregexp file="${diffFileTxt}"
+                       match="^Index: "
+                       replace=""
+                       byline="true"/>
+    </target>
 	
 	<!-- out put svn diff summarize text -->
-	<target name="list.txt">
-	    <!-- twice... todo: one time execution -->
-		<replaceregexp file="summarize"
-		               match="^ "
-		               replace=""
-		               byline="true"/>
-		<replaceregexp file="summarize"
-		               match="^ "
-		               replace=""
-		               byline="true"/>
-	    <loadfile property="diffFile" srcfile="summarize" />
+	<target name="list">
+	    <loadfile property="diffFile" srcfile="${diffFileTxt}" />
        	<script language="javascript">
 			<![CDATA[
 	    	    importPackage(Packages.org.apache.tools.ant.types);
@@ -66,10 +60,10 @@
 				    var diffPathes = diffFile.split("\n");
 				    var str = "";
 				    c = project.createTask("echo");
-					c.setFile(new File(diffListTxt));
+                    c.setFile(new File(diffListTxt));
 					for(var i = 0; i < diffPathes.length; i++){
-						if(diffPathes[i].match(includeList)){
-						 	java.lang.System.out.println(diffPathes[i]); 
+						if(diffPathes[i].match(include_path)){
+						 	java.lang.System.out.println(diffPathes[i]);
 						    str += diffPathes[i] + "\n";
 					    }
 				    }
@@ -79,7 +73,8 @@
 			]]>
     	</script>
 	</target>
-	<target name="setSrc">
+    <!-- set to ouput dir of diff files-->
+	<target name="set_src">
 	    <loadfile property="diffFile" srcfile="${diffListTxt}" />
        	<script language="javascript">
 			<![CDATA[
@@ -87,23 +82,28 @@
 			    importClass(java.io.File);
 			    if(project.getProperty("diffFile")){
 				    var diffPathes = diffFile.split("\n");
-					for(var i = 0; i < diffPathes.length; i++){
-					if(diffPathes[i].match(includeList)){
-						java.lang.System.out.println(diffPathes[i]);
-						fs = new FileSet();
-						fs.setProject(project);
-						fs.setDir(new File(from_dir));
-						fs.setIncludes(diffPathes[i]);
-						    
-						c = project.createTask("copy");
-						c.setTodir(new File(outdir));
-						c.addFileset(fs);
-						c.execute();
-					}
-			      }
-		      }
+                    for(var i = 0; i < diffPathes.length; i++){
+                        if(diffPathes[i].match(include_path)){
+                            java.lang.System.out.println(diffPathes[i]);
+                            fs = new FileSet();
+                            fs.setProject(project);
+                            fs.setDir(new File(from_dir));
+                            fs.setIncludes(diffPathes[i]);
+
+                            c = project.createTask("copy");
+                            c.setTodir(new File(outdir));
+                            c.addFileset(fs);
+                            c.execute();
+                        }
+                    }
+		        }
 			]]>
     	</script>
 	</target>
+    <target name="after_clean">
+        <delete dir="${from_dir}"/>
+        <delete file="${diffFileTxt}" />
+        <delete file="${diffListTxt}"/>
+    </target>
 	
 </project>
