@@ -7,6 +7,7 @@
     <property name="diffFileTxt" value="diffFile.txt" />
     <property name="diffListTxt" value="processed_diff_list.txt" />
     <property  name="from_dir" value="from_dir" />
+    <property name="lib.dir" value="lib" />
 
 	<!-- パスを通す -->
   	 <path id="path.svnant">
