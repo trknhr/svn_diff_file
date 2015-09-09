@@ -12,18 +12,10 @@ Extract diff files from before version in SVN by ant task
 2. Set property file
 you set build.properties key value.
 
-`repoUrl`
+* `repoUrl`: your target svn url (http or https)
 
-your target svn url (http or https)
+* `before_revision`: get files which HEAD in ```repoURLget``` are different files from before_revision
 
-`before_revision`
+* `include_path`: you want to get files in (include_path) directory.
 
-get files which HEAD in ```repoURLget``` are different files from before_revision
-
-`include_path`
-
-you want to get files in (include_path) directory.
-
-`outdir`
-
-extract files are destination
+* `outdir`: extract files are destination
