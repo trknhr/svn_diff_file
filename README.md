@@ -1,6 +1,11 @@
 # svn_diff_file
 Extract diff files from before version in SVN by ant task
 
+# USAGE
+
+1. ant install
+2. in root directory `ant`
+
 ## Settings
 
 1. Install `svn_diff_file`.
